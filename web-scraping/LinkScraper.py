@@ -8,16 +8,20 @@ from datetime import date
 
 # Execution time decorator
 def execution_time(func):
-    def wrapper(*args):
+    def wrapper(*args, **kwargs):
         before = time.time()
-        print(func(*args))
+        result = func(*args, **kwargs)
         print("The script execute in {} seconds".format(time.time() - before))
+        return result
 
     return wrapper
 
 
 class LinkScraper:
     ''' Web scraper for links from dom.trojmiasto.pl
+
+    Assumptions (https://www.trojmiasto.pl/robots.txt):
+        Crawl-delay: 2
 
     Args:
         type_of_market (int): 1 for primary market or 2 for secondary market
@@ -62,6 +66,7 @@ class LinkScraper:
             if res.status_code == 200:
                 # passing reponse_url to parse() method as an argument
                 self.parse(response_url)
+                time.sleep(2)
             else:
                 None
 
@@ -110,10 +115,10 @@ class LinkScraper:
 
 if __name__ == '__main__':
     # Check the page count first and update interval parameter.
-    primary_links_scrapper = LinkScraper(interval = (0, 96), type_of_market = 1)
+    primary_links_scrapper = LinkScraper(interval = (0, 2), type_of_market = 1)
     primary_links_scrapper.run()
 
-    secondary_links_scrapper = LinkScraper(interval = (0, 298), type_of_market = 2)
+    secondary_links_scrapper = LinkScraper(interval = (0, 2), type_of_market = 2)
     secondary_links_scrapper.run()
 
 
