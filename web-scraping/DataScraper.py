@@ -74,48 +74,27 @@ class DataScraper:
         if len(page.find_all("div", {"class": "blocked_box"})) == 0:
             row = list()
             row.append(page.find("div", {"class": "oglField--address"}).getText())
-
-            if page.find("div", {"class": "oglField--cena"}) == None:
-                row.append(None)
-            else:
-                row.append(page.find("div", {"class": "oglField--cena"}).find("span", {"class": "oglDetailsMoney"}).getText())
-
-            if page.find("div", {"class": "oglField oglField--cena_za_m2"}) == None:
-                row.append(None)
-            else:
-                row.append(page.find("div", {"class": "oglField oglField--cena_za_m2"}).find("span", {"class": "oglDetailsMoney"}).getText())
-
-            if page.find("div", {"id": "show-powierzchnia"}) == None:
-                row.append(None)
-            else:
-                row.append(page.find("div", {"id": "show-powierzchnia"}).find("span", {"class": "oglField__value"}).getText())
-
-            if page.find("div", {"class": "oglField--l_pokoi"}) == None:
-                row.append(None)
-            else:
-                row.append(page.find("div", {"class": "oglField--l_pokoi"}).find("span", {"class": "oglField__value"}).getText())
-
-            if page.find("div", {"class": "oglField--pietro"}) == None:
-                row.append(None)
-            else:
-                row.append(page.find("div", {"class": "oglField--pietro"}).find("span", {"class": "oglField__value"}).getText())
-
-            if page.find("div", {"class": "oglField--rok_budowy"}) == None:
-                row.append(None)
-            else:
-                row.append(page.find("div", {"class": "oglField--rok_budowy"}).find("span", {"class": "oglField__value"}).getText())
-
-            if page.find("div", {"class": "oglField--rodzaj_nieruchomosci"}) == None:
-                row.append(None)
-            else:
-                row.append(page.find("div", {"class": "oglField--rodzaj_nieruchomosci"}).find("span", {"class": "oglField__value"}).getText())
-                
+            row.append(self.ifelse_statement("class", "oglField--cena", "oglDetailsMoney", page))
+            row.append(self.ifelse_statement("class", "oglField oglField--cena_za_m2", "oglDetailsMoney", page))
+            row.append(self.ifelse_statement("id", "show-powierzchnia", "oglField__value", page))
+            row.append(self.ifelse_statement("class", "oglField--l_pokoi", "oglField__value", page))
+            row.append(self.ifelse_statement("class", "oglField--pietro", "oglField__value", page))
+            row.append(self.ifelse_statement("class", "oglField--rok_budowy", "oglField__value", page))
+            row.append(self.ifelse_statement("class", "oglField--rodzaj_nieruchomosci", "oglField__value", page))
             return row
         else:
             print("This offer has been removed.")
             self.deleted += 1
-            pass
 
+
+    def ifelse_statement(self, class_id, first_name, second_name, page):
+        if page.find("div", {class_id: first_name}) == None:
+            row = None
+        else:
+            row = page.find("div", {class_id: first_name}).find("span", {"class": second_name}).getText()
+
+        return row
+        
 
     def add_row_to_df(self, row):
         to_append = pd.Series(row, index = self.df.columns)
@@ -127,7 +106,7 @@ class DataScraper:
         filename = 'data' + '-' + str(self.type_of_market) + '-' + self.date + '.csv'
         os.makedirs(path, exist_ok=True)
         
-        self.df.to_csv(path_or_buf = (path + filename), encoding='cp1250')
+        self.df.to_csv(path_or_buf = (path + filename), encoding='cp1250', index = False)
 
 
     @execution_time
@@ -145,21 +124,26 @@ class DataScraper:
         urls = urls.split('\n')
 
         # Looping through urls
-        for url in urls[1:5]:
+        for url in urls:
             time.sleep(1)
             parsed_doc = self.fetch_html(url)
             row = self.fetch_data(parsed_doc)
-            self.add_row_to_df(row)
+            if row != None:
+                self.add_row_to_df(row)
 
         # Saving data frame to the .csv file
         self.save_to_csv()
 
         # Summary
         print(self.deleted, " offers have been deleted.")
-        print(len(self.df.index), " offers have been saved to a file.")
+        print(len(self.df.index), " offers have been saved to the file.")
 
 
 
 if __name__ == '__main__':
-    data = DataScraper(type_of_market = 1, date = '2020-11-12')
-    data.run()
+    primary_data_scraper = DataScraper(type_of_market = 1, date = '2020-11-12')
+    primary_data_scraper.run()
+
+    secondary_data_scraper = DataScraper(type_of_market = 2, date = '2020-11-12')
+    secondary_data_scraper.run()
+    
