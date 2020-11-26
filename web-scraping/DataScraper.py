@@ -35,15 +35,6 @@ class DataScraper:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
             }
-        self.address_list = []
-        self.price_list = []
-        self.sq_meter_price_list = []
-        self.area_list = []
-        self.n_rooms_list = []
-        self.floor_list = []
-        self.build_year_list = []
-        self.type_list = []
-        self.market_list = []
         columns = ['address', 'price', 'sq_meter_price', 'area', 'n_rooms', 'floor', 'build_year', 'type']
         self.df = pd.DataFrame(columns=columns)
         self.deleted = 0
@@ -125,7 +116,7 @@ class DataScraper:
 
         # Looping through urls
         for url in urls:
-            time.sleep(1)
+            time.sleep(2)
             parsed_doc = self.fetch_html(url)
             row = self.fetch_data(parsed_doc)
             if row != None:
@@ -141,9 +132,9 @@ class DataScraper:
 
 
 if __name__ == '__main__':
-    primary_data_scraper = DataScraper(type_of_market = 1, date = '2020-11-12')
+    primary_data_scraper = DataScraper(type_of_market = 1, date = '2020-11-26')
     primary_data_scraper.run()
 
-    secondary_data_scraper = DataScraper(type_of_market = 2, date = '2020-11-12')
+    secondary_data_scraper = DataScraper(type_of_market = 2, date = '2020-11-26')
     secondary_data_scraper.run()
     
