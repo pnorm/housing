@@ -45,34 +45,15 @@ class DataScraper:
         self.market_list = []
         columns = ['address', 'price', 'sq_meter_price', 'area', 'n_rooms', 'floor', 'build_year', 'type']
         self.df = pd.DataFrame(columns=columns)
+        self.deleted = 0
 
 
     def fetch_html(self, url):
-        '''
-        # headers
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
-        }
-        '''
-        
         res = requests.get(url=url, headers=self.headers)
         print('HTTP GET request to URL: %s | Status code: %s' % (res.url, res.status_code))
 
         if res.status_code == 200:
-            parsed_doc = self.parse(url)
-            row = self.fetch_data(parsed_doc)
-            self.add_row_to_df(row)
-            '''
-            self.address
-            self.price
-            self.sq_meter_price
-            self.area
-            self.n_rooms
-            self.floor
-            self.build_year
-            self.type_of
-            self.market
-            '''
+            return self.parse(url)
         else:
             return None
 
@@ -92,23 +73,52 @@ class DataScraper:
         if len(page.find_all("div", {"class": "blocked_box"})) == 0:
             row = list()
             row.append(page.find("div", {"class": "oglField--address"}).getText())
-            row.append(page.find("div", {"class": "oglField--cena"}).find("span", {"class": "oglDetailsMoney"}).getText())
-            row.append(page.find("div", {"class": "oglField oglField--cena_za_m2"}).find("span", {"class": "oglDetailsMoney"}).getText())
-            row.append(page.find("div", {"id": "show-powierzchnia"}).find("span", {"class": "oglField__value"}).getText())
-            row.append(page.find("div", {"class": "oglField--l_pokoi"}).find("span", {"class": "oglField__value"}).getText())
-            row.append(page.find("div", {"class": "oglField--pietro"}).find("span", {"class": "oglField__value"}).getText())
-            row.append(page.find("div", {"class": "oglField--rok_budowy"}).find("span", {"class": "oglField__value"}).getText())
-            row.append(page.find("div", {"class": "oglField--rodzaj_nieruchomosci"}).find("span", {"class": "oglField__value"}).getText())
+
+            if page.find("div", {"class": "oglField--cena"}) == None:
+                row.append(None)
+            else:
+                row.append(page.find("div", {"class": "oglField--cena"}).find("span", {"class": "oglDetailsMoney"}).getText())
+
+            if page.find("div", {"class": "oglField oglField--cena_za_m2"}) == None:
+                row.append(None)
+            else:
+                row.append(page.find("div", {"class": "oglField oglField--cena_za_m2"}).find("span", {"class": "oglDetailsMoney"}).getText())
+
+            if page.find("div", {"id": "show-powierzchnia"}) == None:
+                row.append(None)
+            else:
+                row.append(page.find("div", {"id": "show-powierzchnia"}).find("span", {"class": "oglField__value"}).getText())
+
+            if page.find("div", {"class": "oglField--l_pokoi"}) == None:
+                row.append(None)
+            else:
+                row.append(page.find("div", {"class": "oglField--l_pokoi"}).find("span", {"class": "oglField__value"}).getText())
+
+            if page.find("div", {"class": "oglField--pietro"}) == None:
+                row.append(None)
+            else:
+                row.append(page.find("div", {"class": "oglField--pietro"}).find("span", {"class": "oglField__value"}).getText())
+
+            if page.find("div", {"class": "oglField--rok_budowy"}) == None:
+                row.append(None)
+            else:
+                row.append(page.find("div", {"class": "oglField--rok_budowy"}).find("span", {"class": "oglField__value"}).getText())
+
+            if page.find("div", {"class": "oglField--rodzaj_nieruchomosci"}) == None:
+                row.append(None)
+            else:
+                row.append(page.find("div", {"class": "oglField--rodzaj_nieruchomosci"}).find("span", {"class": "oglField__value"}).getText())
+                
             return row
         else:
             print("This offer has been removed.")
+            self.deleted += 1
             pass
 
 
     def add_row_to_df(self, row):
         to_append = pd.Series(row, index = self.df.columns)
         self.df = self.df.append(to_append, ignore_index=True)
-        pass
 
 
     def save_to_csv(self, df):
@@ -121,7 +131,7 @@ class DataScraper:
         urls = ''
         
         # fetch urls from file
-        source = 'trojmiasto-links/' + 'links' + str(self.type_of_market)+ '-' + self.date + '.txt' 
+        source = 'trojmiasto-links/' + 'links' + str(self.type_of_market) + '-' + self.date + '.txt' 
         with open(source, 'r', encoding='utf-8') as f:
             for line in f.read():
                 urls += line
@@ -130,15 +140,17 @@ class DataScraper:
         urls = urls.split('\n')
 
         # Looping through urls
-        for url in urls[0:5]:
+        for url in urls[1:100]:
             time.sleep(1)
-            self.fetch_html(url)
+            parsed_doc = self.fetch_html(url)
+            row = self.fetch_data(parsed_doc)
+            self.add_row_to_df(row)
 
+        print(self.deleted, " offers have been deleted.")
+        print(self.df)
 
-        
 
 
 if __name__ == '__main__':
     data = DataScraper(type_of_market = 1, date = '2020-11-12')
     data.run()
-    print(data.df)
