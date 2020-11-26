@@ -5,6 +5,7 @@ import requests
 import time
 from datetime import date
 import pandas as pd
+import os
 
 
 # Execution time decorator
@@ -121,8 +122,12 @@ class DataScraper:
         self.df = self.df.append(to_append, ignore_index=True)
 
 
-    def save_to_csv(self, df):
-        pass
+    def save_to_csv(self): 
+        path = 'trojmiasto-data/'
+        filename = 'data' + '-' + str(self.type_of_market) + '-' + self.date + '.csv'
+        os.makedirs(path, exist_ok=True)
+        
+        self.df.to_csv(path_or_buf = (path + filename), encoding='cp1250')
 
 
     @execution_time
@@ -140,14 +145,18 @@ class DataScraper:
         urls = urls.split('\n')
 
         # Looping through urls
-        for url in urls[1:100]:
+        for url in urls[1:5]:
             time.sleep(1)
             parsed_doc = self.fetch_html(url)
             row = self.fetch_data(parsed_doc)
             self.add_row_to_df(row)
 
+        # Saving data frame to the .csv file
+        self.save_to_csv()
+
+        # Summary
         print(self.deleted, " offers have been deleted.")
-        print(self.df)
+        print(len(self.df.index), " offers have been saved to a file.")
 
 
 
