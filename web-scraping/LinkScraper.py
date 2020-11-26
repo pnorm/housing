@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup as soup
 import requests
 import time
 from datetime import date
+import os
 
 
 # Execution time decorator
@@ -97,6 +98,8 @@ class LinkScraper:
         ''' Saving list to .txt file with one link to an offer in each line. '''
         today = date.today()
         directory = 'trojmiasto-links/'
+        # Make directory if don't exist
+        os.makedirs(directory, exist_ok=True) 
         filename = 'links' + str(self.type_of_market) + '-' + str(today) + '.txt'
         with open(directory + filename, 'w') as f:
             for s in self.list_of_offers:

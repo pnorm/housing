@@ -7,9 +7,23 @@ from datetime import date
 import pandas as pd
 
 
-class DataScraper:
-    '''
+# Execution time decorator
+def execution_time(func):
+    def wrapper(*args, **kwargs):
+        before = time.time()
+        result = func(*args, **kwargs)
+        print("The script execute in {} seconds".format(time.time() - before))
+        return result
 
+    return wrapper
+
+
+class DataScraper:
+    ''' Web scraper 
+
+    Assumptions (https://www.trojmiasto.pl/robots.txt):
+        Crawl-delay: 2
+    
     Args:
         type_of_market (int): 1 primary, 2 secondary market
         date (str): 'YYYY-MM-DD' format
@@ -29,6 +43,8 @@ class DataScraper:
         self.build_year_list = []
         self.type_list = []
         self.market_list = []
+        columns = ['address', 'price', 'sq_meter_price', 'area', 'n_rooms', 'floor', 'build_year', 'type']
+        self.df = pd.DataFrame(columns=columns)
 
 
     def fetch_html(self, url):
@@ -44,7 +60,8 @@ class DataScraper:
 
         if res.status_code == 200:
             parsed_doc = self.parse(url)
-            self.fetch_data(parsed_doc)
+            row = self.fetch_data(parsed_doc)
+            self.add_row_to_df(row)
             '''
             self.address
             self.price
@@ -72,32 +89,39 @@ class DataScraper:
 
 
     def fetch_data(self, page):
-        oglDetailsMoney
-        self.price_listpage.find("span", {"class": "oglDetailsMoney"})
-        '''
-        self.address
-        self.price
-        self.sq_meter_price
-        self.area
-        self.n_rooms
-        self.floor
-        self.build_year
-        self.type_of
-        self.market
-        '''
+        if len(page.find_all("div", {"class": "blocked_box"})) == 0:
+            row = list()
+            row.append(page.find("div", {"class": "oglField--address"}).getText())
+            row.append(page.find("div", {"class": "oglField--cena"}).find("span", {"class": "oglDetailsMoney"}).getText())
+            row.append(page.find("div", {"class": "oglField oglField--cena_za_m2"}).find("span", {"class": "oglDetailsMoney"}).getText())
+            row.append(page.find("div", {"id": "show-powierzchnia"}).find("span", {"class": "oglField__value"}).getText())
+            row.append(page.find("div", {"class": "oglField--l_pokoi"}).find("span", {"class": "oglField__value"}).getText())
+            row.append(page.find("div", {"class": "oglField--pietro"}).find("span", {"class": "oglField__value"}).getText())
+            row.append(page.find("div", {"class": "oglField--rok_budowy"}).find("span", {"class": "oglField__value"}).getText())
+            row.append(page.find("div", {"class": "oglField--rodzaj_nieruchomosci"}).find("span", {"class": "oglField__value"}).getText())
+            return row
+        else:
+            print("This offer has been removed.")
+            pass
+
+
+    def add_row_to_df(self, row):
+        to_append = pd.Series(row, index = self.df.columns)
+        self.df = self.df.append(to_append, ignore_index=True)
         pass
 
 
-    def save_to_csv(self):
+    def save_to_csv(self, df):
         pass
 
 
+    @execution_time
     def run(self):
         # urls list
         urls = ''
         
         # fetch urls from file
-        source = 'trojmiasto-links/' + str(self.type_of_market) + self.date + '.txt' 
+        source = 'trojmiasto-links/' + 'links' + str(self.type_of_market)+ '-' + self.date + '.txt' 
         with open(source, 'r', encoding='utf-8') as f:
             for line in f.read():
                 urls += line
@@ -106,11 +130,15 @@ class DataScraper:
         urls = urls.split('\n')
 
         # Looping through urls
-        for url in urls[0:2]:
-            self.fetch(url)
-            
+        for url in urls[0:5]:
+            time.sleep(1)
+            self.fetch_html(url)
 
 
-if __name__ == '__main__'
+        
+
+
+if __name__ == '__main__':
     data = DataScraper(type_of_market = 1, date = '2020-11-12')
-    dara.run()
+    data.run()
+    print(data.df)
