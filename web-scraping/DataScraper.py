@@ -1,5 +1,5 @@
 # Import packages
-from urllib.request import urlopen as ureq
+import urllib.request, urllib.error
 from bs4 import BeautifulSoup as soup
 import requests
 import time
@@ -32,39 +32,46 @@ class DataScraper:
     def __init__(self, type_of_market, date):
         self.type_of_market = type_of_market
         self.date = date
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
-            }
-        columns = ['address', 'price', 'sq_meter_price', 'area', 'n_rooms', 'floor', 'build_year', 'type']
+        columns = ['company', 'address', 'price', 'sq_meter_price', 'area', 'n_rooms', 'floor', 'build_year', 'type']
         self.df = pd.DataFrame(columns=columns)
         self.deleted = 0
 
 
-    def fetch_html(self, url):
-        res = requests.get(url=url, headers=self.headers)
-        print('HTTP GET request to URL: %s | Status code: %s' % (res.url, res.status_code))
-
-        if res.status_code == 200:
-            return self.parse(url)
-        else:
-            return None
-
-
     def parse(self, url):
-        # Opening up connection ang grabbing the page
-        client = ureq(url)
-        page_html = client.read()
-        client.close()
-        
-        # HTML parser
-        page_soup = soup(page_html, "html5lib")
-        return page_soup
+        try:
+            conn = urllib.request.urlopen(url)
+        except urllib.error.HTTPError as e:
+            # Return code error (e.g. 404, 501, ...)
+            print('HTTP GET request to URL: %s | Status code: %s' % (url, e.code))
+            return 'Code specific error'
+        except urllib.error.URLError as e:
+            # Not an HTTP-specific error (e.g. connection refused)
+            print('HTTP GET request to URL: %s | URLError: {}' % (url, e.reason))
+            return 'Connection refused'
+        else:
+            print('HTTP GET request to URL: %s | Status code: %s' % (url, conn.getcode()))
+            # HTML parser
+            page_html = conn.read()
+            page_soup = soup(page_html, "html5lib")
+            conn.close()
+            return page_soup
+
 
 
     def fetch_data(self, page):
         if len(page.find_all("div", {"class": "blocked_box"})) == 0:
             row = list()
-            row.append(page.find("div", {"class": "oglField--address"}).getText())
+
+            if len(page.find_all("div", {"class": "ogloszeniaShowName__element"})) == 2:
+                row.append(page.find_all("div", {"class": "ogloszeniaShowName__element"})[0].find("a").getText().strip()) #developer
+                row.append(page.find_all("div", {"class": "ogloszeniaShowName__element"})[1].find_all("span")[1].getText().strip()) #adres
+            elif len(page.find_all("div", {"class": "ogloszeniaShowName__element"})) == 1:
+                row.append(None)
+                row.append(page.find_all("div", {"class": "ogloszeniaShowName__element"})[0].find_all("span")[1].getText().strip())
+            else:
+                row.append(None)
+                row.append(page.find("div", {"class": "oglField--address"}).getText())
+            
             row.append(self.ifelse_statement("class", "oglField--cena", "oglDetailsMoney", page))
             row.append(self.ifelse_statement("class", "oglField oglField--cena_za_m2", "oglDetailsMoney", page))
             row.append(self.ifelse_statement("id", "show-powierzchnia", "oglField__value", page))
@@ -115,12 +122,20 @@ class DataScraper:
         urls = urls.split('\n')
 
         # Looping through urls
-        for url in urls:
-            time.sleep(2)
-            parsed_doc = self.fetch_html(url)
-            row = self.fetch_data(parsed_doc)
-            if row != None:
-                self.add_row_to_df(row)
+        for url in urls[0:5]:
+            if url == '':
+                pass
+            else:
+                time.sleep(2)
+                parsed_doc = self.parse(url)
+                if parsed_doc == 'Code specific error':
+                    pass
+                elif parsed_doc == 'Connection refused':
+                    pass
+                else:
+                    row = self.fetch_data(parsed_doc)
+                    if row != None:
+                        self.add_row_to_df(row)
 
         # Saving data frame to the .csv file
         self.save_to_csv()
