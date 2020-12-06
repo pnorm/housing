@@ -98,7 +98,7 @@ class LinkScraper:
         ''' Saving list to .txt file with one link to an offer in each line. '''
         today = date.today()
         directory = 'trojmiasto-links/'
-        # Make directory if don't exist
+        # Make directory if it doesn't exists
         os.makedirs(directory, exist_ok=True) 
         filename = 'links' + str(self.type_of_market) + '-' + str(today) + '.txt'
         with open(directory + filename, 'w') as f:
@@ -118,10 +118,10 @@ class LinkScraper:
 
 if __name__ == '__main__':
     # Check the page count first and update interval parameter.
-    primary_links_scrapper = LinkScraper(interval = (0, 2), type_of_market = 1)
+    primary_links_scrapper = LinkScraper(interval = (0, 98), type_of_market = 1)
     primary_links_scrapper.run()
 
-    secondary_links_scrapper = LinkScraper(interval = (0, 2), type_of_market = 2)
+    secondary_links_scrapper = LinkScraper(interval = (0, 299), type_of_market = 2)
     secondary_links_scrapper.run()
 
 

@@ -57,7 +57,6 @@ class DataScraper:
             return page_soup
 
 
-
     def fetch_data(self, page):
         if len(page.find_all("div", {"class": "blocked_box"})) == 0:
             row = list()
@@ -122,7 +121,7 @@ class DataScraper:
         urls = urls.split('\n')
 
         # Looping through urls
-        for url in urls[0:5]:
+        for url in urls:
             if url == '':
                 pass
             else:
