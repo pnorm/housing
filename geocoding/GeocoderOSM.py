@@ -67,24 +67,28 @@ class GeocoderOSM:
     def run(self):
         df = self.get_data()
 
-        df = df[1:10]
+        count_none = 0
 
         for i in range(len(df)):
-            address = df.iat[i, 2]
+            address = df.iat[i, 3]
             res = self.fetch(address)
-        
+            
             # Retrieving Lon and lat
             coords = self.parse(res.json())
-            
-            lat = coords[1]
-            lon = coords[0]
 
-            print("Long: {} and Lat: {} for adddress: {}".format(coords[0], coords[1], address))
-
-            df.iat[i, df.columns.get_loc("lat")] = lat
-            df.iat[i, df.columns.get_loc("lon")] = lon
+            if coords == None:
+                count_none += 1
+                print('None for address: {}'.format(address))
+            else:
+                lat = coords[1]
+                lon = coords[0]
+                print("Long: {} and Lat: {} for adddress: {}".format(coords[0], coords[1], address))
+                df.iat[i, df.columns.get_loc("lat")] = lat
+                df.iat[i, df.columns.get_loc("lon")] = lon
                                      
-            time.sleep(1.1)
+            time.sleep(1.5)
+
+        print(count_none, ' NoneType objects.')
         
         # Saving to csv file
         self.save_to_csv(df)
@@ -92,5 +96,5 @@ class GeocoderOSM:
 
 
 if __name__ == '__main__':
-    geocoder = GeocoderOSM('2020-11-26')
+    geocoder = GeocoderOSM('2020-12-23')
     geocoder.run()
