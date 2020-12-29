@@ -32,9 +32,10 @@ class DataScraper:
     def __init__(self, type_of_market, date):
         self.type_of_market = type_of_market
         self.date = date
-        columns = ['company', 'address', 'price', 'sq_meter_price', 'area', 'n_rooms', 'floor', 'build_year', 'type']
+        columns = ['company', 'address', 'price', 'sq_meter_price', 'area', 'n_rooms', 'floor', 'build_year', 'type', 'date']
         self.df = pd.DataFrame(columns=columns)
         self.deleted = 0
+        self.incomplete = 0
 
 
     def parse(self, url):
@@ -51,10 +52,16 @@ class DataScraper:
         else:
             print('HTTP GET request to URL: %s | Status code: %s' % (url, conn.getcode()))
             # HTML parser
-            page_html = conn.read()
-            page_soup = soup(page_html, "html5lib")
-            conn.close()
-            return page_soup
+            try:
+                page_html = conn.read()
+                page_soup = soup(page_html, "html5lib")
+                conn.close()
+                return page_soup
+            except:
+                print('IncompleteRead Exception')
+                self.incomplete += 1
+                return None
+
 
 
     def fetch_data(self, page):
@@ -78,6 +85,7 @@ class DataScraper:
             row.append(self.ifelse_statement("class", "oglField--pietro", "oglField__value", page))
             row.append(self.ifelse_statement("class", "oglField--rok_budowy", "oglField__value", page))
             row.append(self.ifelse_statement("class", "oglField--rodzaj_nieruchomosci", "oglField__value", page))
+            row.append(self.date)
             return row
         else:
             print("This offer has been removed.")
@@ -125,11 +133,13 @@ class DataScraper:
             if url == '':
                 pass
             else:
-                time.sleep(2)
+                time.sleep(0.9)
                 parsed_doc = self.parse(url)
                 if parsed_doc == 'Code specific error':
                     pass
                 elif parsed_doc == 'Connection refused':
+                    pass
+                elif parsed_doc == None:
                     pass
                 else:
                     row = self.fetch_data(parsed_doc)
@@ -141,14 +151,15 @@ class DataScraper:
 
         # Summary
         print(self.deleted, " offers have been deleted.")
+        print(self.incomplete, " incomplete pages also have been deleted.")
         print(len(self.df.index), " offers have been saved to the file.")
 
 
 
 if __name__ == '__main__':
-    primary_data_scraper = DataScraper(type_of_market = 1, date = '2020-11-26')
+    primary_data_scraper = DataScraper(type_of_market = 1, date = '2020-12-23')
     primary_data_scraper.run()
 
-    secondary_data_scraper = DataScraper(type_of_market = 2, date = '2020-11-26')
+    secondary_data_scraper = DataScraper(type_of_market = 2, date = '2020-12-23')
     secondary_data_scraper.run()
     
