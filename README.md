@@ -1,0 +1,1 @@
+![alt text](https://github.com/pnorm/housing/blob/master/img/map.png?raw=true)
